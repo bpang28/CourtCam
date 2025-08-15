@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B990D5AA2E182941004662C0 /* court.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = B990D5A92E182940004662C0 /* court.mlpackage */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B98E607D2E0E1A05002CC150 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,8 @@
 		B98E606F2E0E19FB002CC150 /* CourtCam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CourtCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B98E607C2E0E1A05002CC150 /* CourtCamTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CourtCamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B98E60862E0E1A05002CC150 /* CourtCamUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CourtCamUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B98E60992E0E1ABF002CC150 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B990D5A92E182940004662C0 /* court.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = court.mlpackage; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,10 +81,12 @@
 		B98E60662E0E19FB002CC150 = {
 			isa = PBXGroup;
 			children = (
+				B98E60992E0E1ABF002CC150 /* Info.plist */,
 				B98E60712E0E19FB002CC150 /* CourtCam */,
 				B98E607F2E0E1A05002CC150 /* CourtCamTests */,
 				B98E60892E0E1A05002CC150 /* CourtCamUITests */,
 				B98E60702E0E19FB002CC150 /* Products */,
+				B990D5A92E182940004662C0 /* court.mlpackage */,
 			);
 			sourceTree = "<group>";
 		};
@@ -236,6 +244,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B990D5AA2E182941004662C0 /* court.mlpackage in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -400,6 +409,9 @@
 				DEVELOPMENT_TEAM = XU2Y5DCZQP;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access to detect tennis courts";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to save your recorded tennis match to your Photos library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,6 +440,9 @@
 				DEVELOPMENT_TEAM = XU2Y5DCZQP;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "This app needs camera access to detect tennis courts";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to save your recorded tennis match to your Photos library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

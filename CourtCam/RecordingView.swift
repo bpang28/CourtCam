@@ -7,126 +7,262 @@
 
 import SwiftUI
 import Vision
+import UIKit
+import PhotosUI
+import AVKit
 
-// MARK: – Which alert to show?
 enum ActiveAlert: Identifiable {
-    case matched, autoStopped
+    case stopped
     var id: Int { hashValue }
 }
 
-struct ContentView: View {
-    @State private var detectedRect: VNRectangleObservation?
+struct RecordingView: View {
+    @State private var isCourt = false
     @State private var isRecording = false
     @State private var showStopAlert = false
     @State private var unmatchedCount = 0
-    
-    // Guide is 60% of screen width; allow ±15% tolerance
-    private let guideFraction: CGFloat = 0.6
-    private let tolerance: CGFloat   = 0.25
-    private let maxConsecutiveMisses = 5
-    
-    private var isMatched: Bool {
-        guard let rect = detectedRect else { return false }
-        return matchesGuide(rect)
-    }
+    @State private var matchedCount = 0
+    @State private var autoRecord = true
+    @State private var activeAlert: ActiveAlert?
+    @State private var showStartToast = false
+    @State private var showHintToast = true
+    @State private var startWorkItem: DispatchWorkItem?
+    @State private var stopWorkItem:  DispatchWorkItem?
+    @State private var referenceCourtPoints: [CGPoint] = []
+    @State private var showPhotoPicker = false
+    @State private var selectedItem: PhotosPickerItem? = nil
+    @State private var previewURL: URL? = nil
+
+    private let missThresh = 10
+    private let matchThresh = 5
     
     var body: some View {
         ZStack {
-            CameraView(detectedRectangle: $detectedRect, isRecording: $isRecording)
-                .edgesIgnoringSafeArea(.all)
-            
-            // Translucent guide square
-            GeometryReader { geo in
-                let w = geo.size.width * guideFraction
-                Rectangle()
-                    .stroke(
-                        isMatched
-                        ? Color.green.opacity(0.8)
-                        : Color.white.opacity(0.5),
-                        lineWidth: 2
-                    )
-                    .frame(width: w, height: w)
-                    .position(x: geo.size.width/2, y: geo.size.height/2)
-                    .animation(.easeInOut(duration: 0.2), value: isMatched)
-            }
-            
+            cameraLayer
+            overlayImage
+            RecordingControls(
+                isRecording: $isRecording,
+                isCourt: $isCourt,
+                autoRecord: $autoRecord,
+                toggleRecording: toggleRecording
+            )
             VStack {
                 Spacer()
-                
-                ZStack {
-                    // The “Hint” label behind, only when locked
-                    if !isMatched {
-                        Text("Align the court\nto enable recording")
-                            .font(.caption)
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Color.black.opacity(0.6))
-                            .cornerRadius(8)
-                            .offset(y: -80)
-                            .transition(.opacity)
-                    }
-                    
+                HStack {
                     Button {
-                        isRecording.toggle()
+                        showPhotoPicker = true
                     } label: {
-                        Image(systemName: isRecording ? "stop.circle.fill" : "record.circle.fill")
-                            .font(.system(size: 80))
+                        Image(systemName: "photo.on.rectangle")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                            .padding(12)
+                            .background(Color.black.opacity(0.5))
+                            .foregroundColor(.white)
+                            .clipShape(Circle())
                     }
-                    .foregroundColor(isMatched
-                                     ? (isRecording ? .yellow : .red)
-                                     : .gray)        // gray out when not allowed
-                    .opacity(isMatched ? 1.0 : 0.3)  // fade when not allowed
-                    .disabled(!isMatched)
-                    .scaleEffect(isMatched ? 1.0 : 0.8)  // slightly smaller when locked
-                    .animation(.easeInOut(duration: 0.2), value: isMatched)
-                    .padding(.bottom, 40)
+                    .padding(.leading, 16)
+                    Spacer()
+                }
+                .padding(.bottom, 40)
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                withAnimation { showHintToast = false }
+            }
+        }
+       
+        .onChange(of: autoRecord) { _, new in
+            print(autoRecord)
+            matchedCount = 0
+            unmatchedCount = 0
+        }
+        
+        .onChange(of: isCourt) { _, newMatched in
+            guard autoRecord else {
+                startWorkItem?.cancel()
+                stopWorkItem?.cancel()
+                return
+            }
+            if newMatched {
+                stopWorkItem?.cancel()
+            } else {
+                startWorkItem?.cancel()
+            }
+
+            let item = DispatchWorkItem {
+                if newMatched {
+                    if isCourt && !isRecording {
+                        toggleRecording()
+                    }
+                } else {
+                    if !isCourt && isRecording {
+                        toggleRecording()
+                    }
                 }
             }
-            // Auto-stop when we lose the match during recording
-            .onChange(of: isMatched) { old, new in
-                if old && !new && isRecording {
-                    unmatchedCount += 1
-                    if unmatchedCount >= maxConsecutiveMisses {
-                        isRecording = false
-                        showStopAlert = true
-                        unmatchedCount = 0
-                    } else if new {
-                        unmatchedCount = 0
+            if newMatched {
+                startWorkItem = item
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: item)
+            } else {
+                stopWorkItem = item
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: item)
+            }
+        }
+        .alert(item: $activeAlert) { _ in
+          Alert(
+            title:   Text("Recording stopped"),
+            message: Text("Video saved to camera roll"),
+            dismissButton: .default(Text("OK")) {
+              activeAlert = nil
+            }
+          )
+        }
+        .overlay(
+              Group {
+                if showHintToast {
+                  Text("Align the court to enable recording")
+                    .font(.caption)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.black.opacity(0.8))
+                    .cornerRadius(10)
+                    .transition(.opacity)
+                }
+              }
+              .frame(maxWidth: .infinity,
+                     maxHeight: .infinity,
+                     alignment: .top)
+              .padding(.top, 80)
+            )
+        .animation(.easeInOut, value: showHintToast)
+        .overlay(
+          Group {
+            if showStartToast {
+              Text("Recording started")
+                .font(.headline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.black.opacity(0.8))
+                .cornerRadius(10)
+                .transition(.opacity)
+            }
+          }
+          .frame(maxWidth: .infinity,
+                 maxHeight: .infinity,
+                 alignment: .top)
+          .padding(.top, 80)
+        )
+        .animation(.easeInOut, value: showStartToast)
+        .photosPicker(
+            isPresented: $showPhotoPicker,
+            selection: $selectedItem,
+            matching: .videos
+        )
+        .onChange(of: selectedItem) { _, newItem in
+            loadVideo(from: newItem)
+        }
+        .sheet(item: $previewURL) { url in
+            VideoPlayer(player: AVPlayer(url: url))
+                .ignoresSafeArea()
+        }
+    }
+    
+    private var cameraLayer: some View {
+        CameraView(isCourt: $isCourt, isRecording: $isRecording)
+            .edgesIgnoringSafeArea(.all)
+    }
+    
+    private var overlayImage: some View {
+        Image(isCourt ? "court_green" : "court_white")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .scaledToFit()
+            .ignoresSafeArea()
+    }
+    
+    //MARK: Functions
+    
+    private func loadVideo(from item: PhotosPickerItem?) {
+        guard let item else { return }
+        Task {
+            do {
+                if let data = try await item.loadTransferable(type: Data.self) {
+                    let tmp = FileManager.default.temporaryDirectory
+                        .appendingPathComponent(UUID().uuidString)
+                        .appendingPathExtension("mp4")
+                    try data.write(to: tmp, options: .atomic)
+                    await MainActor.run {
+                        previewURL = tmp
                     }
                 }
-            }
-            .alert("Recording stopped", isPresented: $showStopAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("Court is no longer aligned.")
+            } catch {
+                print("❌ Failed to load video from PhotosPicker:", error)
             }
         }
     }
-    private func matchesGuide(_ rect: VNRectangleObservation) -> Bool {
-        let guide = CGRect(
-            x: (1 - guideFraction) / 2,
-            y: (1 - guideFraction) / 2,
-            width: guideFraction,
-            height: guideFraction
-        )
-        
-        let box = rect.boundingBox
-        
-        // Compute intersection
-        guard let intersection = guide.intersection(box).isNull ? nil : guide.intersection(box) else {
-            return false
+
+    private func toggleRecording() {
+        isRecording.toggle()
+        showStartToast = isRecording
+        if isRecording {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                withAnimation { showStartToast = false }
+            }
+        } else {
+            activeAlert = .stopped
         }
-        let intersectionArea = intersection.width * intersection.height
-        
-        // Compute union = areaA + areaB − intersection
-        let areaA = guide.width * guide.height
-        let areaB = box.width * box.height
-        let unionArea = areaA + areaB - intersectionArea
-        
-        let iou = intersectionArea / unionArea
-        
-        // Match if IoU ≥ 0.5 (you can tweak this threshold)
-        return iou >= 0.5
+    }
+}
+
+struct RecordingControls: View {
+    @Binding var isRecording: Bool
+    @Binding var isCourt: Bool
+    @Binding var autoRecord: Bool
+    var toggleRecording: () -> Void
+
+    var body: some View {
+        let iconName = isRecording ? "stop.circle.fill" : "record.circle.fill"
+        let color: Color = {
+            if autoRecord {
+                if isCourt {
+                    return isRecording ? .yellow : .red
+                } else {
+                    return .gray
+                }
+            } else {
+                return isRecording ? .yellow : .red
+            }
+        }()
+
+        let opacity: Double = (autoRecord && !isCourt) ? 0.3 : 1.0
+        let scale: CGFloat = (autoRecord && !isCourt) ? 0.8 : 1.0
+
+        return VStack {
+            HStack {
+                Toggle("Auto-Record", isOn: $autoRecord)
+                    .toggleStyle(SwitchToggleStyle(tint: .green))
+                Spacer()
+            }
+            .padding()
+
+            Spacer()
+
+            ZStack {
+                Button(action: toggleRecording) {
+                    Image(systemName: iconName)
+                        .font(.system(size: 80))
+                }
+                .foregroundColor(color)
+                .opacity(opacity)
+                .disabled(autoRecord && !isCourt)
+                .scaleEffect(scale)
+                .animation(.easeInOut(duration: 0.2), value: isCourt)
+                .padding(.bottom, 40)
+            }
+        }
     }
 }
