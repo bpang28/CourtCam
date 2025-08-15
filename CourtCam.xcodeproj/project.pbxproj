@@ -6,10 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		B990D5AA2E182941004662C0 /* court.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = B990D5A92E182940004662C0 /* court.mlpackage */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
 		B98E607D2E0E1A05002CC150 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -32,7 +28,6 @@
 		B98E607C2E0E1A05002CC150 /* CourtCamTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CourtCamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B98E60862E0E1A05002CC150 /* CourtCamUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CourtCamUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B98E60992E0E1ABF002CC150 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		B990D5A92E182940004662C0 /* court.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = court.mlpackage; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -86,7 +81,6 @@
 				B98E607F2E0E1A05002CC150 /* CourtCamTests */,
 				B98E60892E0E1A05002CC150 /* CourtCamUITests */,
 				B98E60702E0E19FB002CC150 /* Products */,
-				B990D5A92E182940004662C0 /* court.mlpackage */,
 			);
 			sourceTree = "<group>";
 		};
@@ -244,7 +238,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B990D5AA2E182941004662C0 /* court.mlpackage in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
